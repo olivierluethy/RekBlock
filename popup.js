@@ -43,21 +43,34 @@ function getDomain(input) {
   return baseDomain;
 }
 
-// Funktion zum Rendern der blockierten Liste
-function renderBlockedList(blocked) {
+// Funktion zum Rend assay
+function renderBlockedList(blocked, editingIndex = null) {
   const ul = document.getElementById("blockedList");
   ul.innerHTML = "";
   blocked.forEach((pattern, index) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${pattern}</span>
-                    <div>
-                      <button class="action-btn" data-index="${index}">Edit</button>
-                      <button class="action-btn delete" data-index="${index}">Delete</button>
-                    </div>`;
+    if (index === editingIndex) {
+      // Edit mode
+      const domain = pattern.replace(/^\*:\/\/|\/\*$/g, ""); // Entfernt *:// am Anfang und /* am Ende
+      li.innerHTML = `
+        <input type="text" class="edit-input" value="${domain}">
+        <div>
+          <button class="action-btn save" data-index="${index}">Save</button>
+          <button class="action-btn cancel" data-index="${index}">Cancel</button>
+        </div>`;
+    } else {
+      // Display mode
+      li.innerHTML = `
+        <span>${pattern}</span>
+        <div>
+          <button class="action-btn" data-index="${index}">Edit</button>
+          <button class="action-btn delete" data-index="${index}">Delete</button>
+        </div>`;
+    }
     ul.appendChild(li);
   });
 
-  // Event-Listener für Bearbeiten- und Löschen-Buttons hinzufügen
+  // Event-Listener für alle Buttons hinzufügen
   document.querySelectorAll(".action-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const index = parseInt(this.dataset.index);
@@ -70,26 +83,75 @@ function renderBlockedList(blocked) {
             renderBlockedList(blocked);
           });
         });
-      } else {
-        // URL bearbeiten
+      } else if (this.classList.contains("save")) {
+        // Änderungen speichern
+        const input = document.querySelector(`li input.edit-input`);
+        const newDomain = input.value.trim();
+        const validatedDomain = getDomain(newDomain);
+        if (!validatedDomain) {
+          alert(
+            "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein (z. B. schindler.ch, example.com)."
+          );
+          return;
+        }
         chrome.storage.sync.get("blocked", function (data) {
           let blocked = data.blocked || [];
-          const pattern = blocked[index];
-          // Basisdomain aus dem Muster extrahieren (entferne *:// und /*)
-          const domain = pattern.replace(/^\*:\/\/(.+)\/\*\$/, "$1");
-          document.getElementById("urlInput").value = domain;
-          document.getElementById("urlInput").dataset.editIndex = index;
-          document.getElementById("addButton").textContent = "Save";
+          const newPattern = `*://${validatedDomain}/*`;
+          if (
+            blocked.includes(newPattern) &&
+            blocked.indexOf(newPattern) !== index
+          ) {
+            alert("Diese Domain ist bereits blockiert");
+            return;
+          }
+          blocked[index] = newPattern;
+          chrome.storage.sync.set({ blocked: blocked }, function () {
+            renderBlockedList(blocked);
+            // Fade-in Animation für die aktualisierte Zeile
+            const updatedLi = ul.children[index];
+            updatedLi.classList.add("new");
+            setTimeout(() => updatedLi.classList.remove("new"), 1000);
+            // alert(
+            //   `Erfolgreich zu ${validatedDomain} und deren Subdomains aktualisiert.`
+            // );
+          });
         });
+      } else if (this.classList.contains("cancel")) {
+        // Bearbeitung abbrechen
+        chrome.storage.sync.get("blocked", function (data) {
+          renderBlockedList(data.blocked || []);
+        });
+      } else {
+        // In Bearbeitungsmodus wechseln
+        renderBlockedList(blocked, index);
       }
     });
   });
+
+  // Event-Listener für Enter und Escape im Edit-Input
+  const editInput = document.querySelector(".edit-input");
+  if (editInput) {
+    editInput.focus();
+    editInput.addEventListener("keypress", function (event) {
+      if (event.key === "Enter") {
+        document
+          .querySelector(`.action-btn.save[data-index="${editingIndex}"]`)
+          .click();
+      }
+    });
+    editInput.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        document
+          .querySelector(`.action-btn.cancel[data-index="${editingIndex}"]`)
+          .click();
+      }
+    });
+  }
 }
 
-// Funktion zum Verarbeiten der Eingabe (wird für Button-Klick und Enter-Taste verwendet)
+// Funktion zum Verarbeiten der Eingabe (für Button-Klick und Enter-Taste im oberen Eingabefeld)
 function handleSubmit() {
   const input = document.getElementById("urlInput").value.trim();
-  const editIndex = document.getElementById("urlInput").dataset.editIndex;
   const domain = getDomain(input);
 
   if (!domain) {
@@ -103,51 +165,28 @@ function handleSubmit() {
 
   chrome.storage.sync.get("blocked", function (data) {
     let blocked = data.blocked || [];
-
-    if (editIndex !== undefined && editIndex !== "") {
-      // Bestehende URL bearbeiten
-      const index = parseInt(editIndex);
-      if (blocked.includes(pattern) && blocked.indexOf(pattern) !== index) {
-        alert("Diese Domain ist bereits blockiert");
-        return;
-      }
-      blocked[index] = pattern;
-    } else {
-      // Neue URL hinzufügen
-      if (blocked.includes(pattern)) {
-        alert("Diese Domain ist bereits blockiert");
-        return;
-      }
-      blocked.push(pattern);
+    if (blocked.includes(pattern)) {
+      alert("Diese Domain ist bereits blockiert");
+      return;
     }
-
+    blocked.push(pattern);
     chrome.storage.sync.set({ blocked: blocked }, function () {
       const ul = document.getElementById("blockedList");
-      if (editIndex === undefined || editIndex === "") {
-        // Neue URL mit Animation hinzufügen
-        const li = document.createElement("li");
-        li.innerHTML = `<span>${pattern}</span>
-                        <div>
-                          <button class="action-btn" data-index="${
-                            blocked.length - 1
-                          }">Edit</button>
-                          <button class="action-btn delete" data-index="${
-                            blocked.length - 1
-                          }">Delete</button>
-                        </div>`;
-        li.classList.add("new");
-        ul.appendChild(li);
-        setTimeout(() => li.classList.remove("new"), 1000);
-        // alert(`Erfolgreich ${domain} und deren Subdomains blockiert.`);
-      } else {
-        // Liste für Bearbeitung neu rendern
-        renderBlockedList(blocked);
-        // alert(`Erfolgreich zu ${domain} und deren Subdomains aktualisiert.`);
-      }
-      // Eingabe und Button zurücksetzen
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${pattern}</span>
+                      <div>
+                        <button class="action-btn" data-index="${
+                          blocked.length - 1
+                        }">Edit</button>
+                        <button class="action-btn delete" data-index="${
+                          blocked.length - 1
+                        }">Delete</button>
+                      </div>`;
+      li.classList.add("new");
+      ul.appendChild(li);
+      setTimeout(() => li.classList.remove("new"), 1000);
+      //   alert(`Erfolgreich ${domain} und deren Subdomains blockiert.`);
       document.getElementById("urlInput").value = "";
-      document.getElementById("urlInput").dataset.editIndex = "";
-      document.getElementById("addButton").textContent = "Add";
     });
   });
 }
@@ -159,10 +198,10 @@ document.addEventListener("DOMContentLoaded", function () {
     renderBlockedList(data.blocked || []);
   });
 
-  // Hinzufügen oder Bearbeiten einer blockierten URL per Button-Klick
+  // Hinzufügen einer blockierten URL per Button-Klick
   document.getElementById("addButton").addEventListener("click", handleSubmit);
 
-  // Hinzufügen oder Bearbeiten einer blockierten URL per Enter-Taste
+  // Hinzufügen einer blockierten URL per Enter-Taste
   document
     .getElementById("urlInput")
     .addEventListener("keypress", function (event) {
