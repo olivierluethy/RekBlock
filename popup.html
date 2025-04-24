@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>URL Blocker</title>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    li.new {
+      animation: fadeIn 1s;
+    }
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      font-size: 18px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      padding: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+    .action-btn {
+      padding: 3px 8px;
+      font-size: 12px;
+      margin-left: 5px;
+      background-color: #2196F3;
+    }
+    .action-btn.delete {
+      background-color: #f44336;
+    }
+    .action-btn:hover {
+      background-color: #1976D2;
+    }
+    .action-btn.delete:hover {
+      background-color: #d32f2f;
+    }
+    .note {
+      font-size: 12px;
+      color: #555;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Block URL</h1>
+  <input type="text" id="urlInput" placeholder="Enter domain to block, e.g., reddit.com">
+  <button id="addButton">Add</button>
+  <div class="note">Note: Blocks domain and subdomains (e.g., www.reddit.com). Clear browser cache if a site was visited before blocking.</div>
+  <ul id="blockedList"></ul>
+  <script src="popup.js"></script>
+</body>
+</html>

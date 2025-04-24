@@ -1,19 +1,19 @@
 {
-  "name": "Test Blocker",
-  "version": "1.0",
-  "manifest_version": 2,
-  "description": "Blocks youtube.com and others",
-  "permissions": [
-    "webRequest",
-    "webRequestBlocking",
-    "<all_urls>"
-  ],
-  "background": {
-    "scripts": ["background.js"],
-    "persistent": true
-  },
-  "browser_action": {
-    "default_title": "Seitenblocker",
-    "default_popup": "options.html"
+    "manifest_version": 2,
+    "name": "URL Blocker",
+    "version": "1.0",
+    "description": "A simple extension to block URLs.",
+    "permissions": [
+      "webRequest",
+      "webRequestBlocking",
+      "<all_urls>",
+      "storage"
+    ],
+    "background": {
+      "scripts": ["background.js"],
+      "persistent": true
+    },
+    "browser_action": {
+      "default_popup": "popup.html"
+    }
   }
-}
