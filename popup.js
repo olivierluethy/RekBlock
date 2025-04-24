@@ -51,21 +51,21 @@ function renderBlockedList(blocked, editingIndex = null) {
     const li = document.createElement("li");
     if (index === editingIndex) {
       // Edit mode
-      const domain = pattern.replace(/^\*:\/\/|\/\*$/g, ""); // Entfernt *:// am Anfang und /* am Ende
+      const domain = pattern.replace(/^\*:\/\/|\/\*$/g, "");
       li.innerHTML = `
-        <input type="text" class="edit-input" value="${domain}">
-        <div>
-          <button class="action-btn save" data-index="${index}">Save</button>
-          <button class="action-btn cancel" data-index="${index}">Cancel</button>
-        </div>`;
+          <input type="text" class="edit-input" value="${domain}">
+          <div>
+            <button class="action-btn save" data-index="${index}">Save</button>
+            <button class="action-btn cancel" data-index="${index}">Cancel</button>
+          </div>`;
     } else {
       // Display mode
       li.innerHTML = `
-        <span>${pattern}</span>
-        <div>
-          <button class="action-btn" data-index="${index}">Edit</button>
-          <button class="action-btn delete" data-index="${index}">Delete</button>
-        </div>`;
+          <span>${pattern}</span>
+          <div>
+            <button class="action-btn edit" data-index="${index}">Edit</button>
+            <button class="action-btn delete" data-index="${index}">Delete</button>
+          </div>`;
     }
     ul.appendChild(li);
   });
@@ -74,10 +74,12 @@ function renderBlockedList(blocked, editingIndex = null) {
   document.querySelectorAll(".action-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const index = parseInt(this.dataset.index);
+
       if (this.classList.contains("delete")) {
-        // URL löschen
+        // Sicherstellen, dass der Index richtig zugewiesen wird
         chrome.storage.sync.get("blocked", function (data) {
           let blocked = data.blocked || [];
+          // Element aus der Liste entfernen
           blocked.splice(index, 1);
           chrome.storage.sync.set({ blocked: blocked }, function () {
             renderBlockedList(blocked);
@@ -90,7 +92,7 @@ function renderBlockedList(blocked, editingIndex = null) {
         const validatedDomain = getDomain(newDomain);
         if (!validatedDomain) {
           alert(
-            "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein (z. B. schindler.ch, example.com)."
+            "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein."
           );
           return;
         }
@@ -107,13 +109,6 @@ function renderBlockedList(blocked, editingIndex = null) {
           blocked[index] = newPattern;
           chrome.storage.sync.set({ blocked: blocked }, function () {
             renderBlockedList(blocked);
-            // Fade-in Animation für die aktualisierte Zeile
-            const updatedLi = ul.children[index];
-            updatedLi.classList.add("new");
-            setTimeout(() => updatedLi.classList.remove("new"), 1000);
-            // alert(
-            //   `Erfolgreich zu ${validatedDomain} und deren Subdomains aktualisiert.`
-            // );
           });
         });
       } else if (this.classList.contains("cancel")) {
@@ -175,7 +170,7 @@ function handleSubmit() {
       const li = document.createElement("li");
       li.innerHTML = `<span>${pattern}</span>
                       <div>
-                        <button class="action-btn" data-index="${
+                        <button class="action-btn edit" data-index="${
                           blocked.length - 1
                         }">Edit</button>
                         <button class="action-btn delete" data-index="${
@@ -209,4 +204,8 @@ document.addEventListener("DOMContentLoaded", function () {
         handleSubmit();
       }
     });
+
+  document.getElementById("fullScreen").addEventListener("click", function () {
+    chrome.tabs.create({ url: chrome.runtime.getURL("/pages/app.html") });
+  });
 });

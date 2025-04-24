@@ -3,165 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <title>URL Blocker</title>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
-      @keyframes slideIn {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        margin: 0;
-        padding: 24px;
-        width: 360px;
-        background: #f8fafc;
-        color: #1a1a1a;
-        line-height: 1.5;
-        box-sizing: border-box;
-      }
-
-      h1 {
-        font-size: 20px;
-        font-weight: 600;
-        margin: 0 0 16px;
-        color: #1e293b;
-        opacity: 0;
-        transform: translateY(10px);
-        animation: slideIn 0.3s ease-out forwards;
-        text-align: center;
-      }
-
-      .input-container {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        opacity: 0;
-        transform: translateY(10px);
-        animation: slideIn 0.3s ease-out 0.2s forwards;
-      }
-
-      input {
-        flex: 1;
-        padding: 10px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        font-size: 14px;
-        background: #ffffff;
-        transition: all 0.2s ease;
-        box-sizing: border-box;
-      }
-
-      input:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      }
-
-      button {
-        background: #3b82f6;
-        color: white;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      button:hover {
-        background: #2563eb;
-        transform: translateY(-1px);
-      }
-
-      button:active {
-        transform: translateY(0);
-      }
-
-      ul {
-        list-style: none;
-        padding: 0;
-        margin-top: 20px;
-      }
-
-      li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #1e293b;
-        opacity: 0;
-        transform: translateY(10px);
-        animation: slideIn 0.3s ease-out forwards;
-      }
-
-      li.new {
-        animation: fadeIn 1s ease-out;
-      }
-
-      .action-btn {
-        background: none;
-        border: none;
-        padding: 4px 8px;
-        font-size: 13px;
-        cursor: pointer;
-        color: #64748b;
-        transition: color 0.2s ease;
-      }
-
-      .action-btn.edit:hover {
-        color: #3b82f6;
-      }
-
-      .action-btn.delete {
-        color: #f87171;
-      }
-
-      .action-btn.delete:hover {
-        color: #ef4444;
-      }
-
-      .note {
-        font-size: 12px;
-        color: #475569;
-        margin-top: 12px;
-        text-align: center;
-        opacity: 0;
-        transform: translateY(10px);
-        animation: slideIn 0.3s ease-out 0.1s forwards;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
+    <script src="popup.js" defer></script>
   </head>
   <body>
+    <div class="header">
+      <button id="fullScreen">Full Screen</button>
+    </div>
     <h1>Block URL</h1>
     <div class="input-container">
-      <input
-        type="text"
-        id="urlInput"
-        placeholder="Enter domain to block"
-      />
+      <input type="text" id="urlInput" placeholder="Enter domain to block" />
       <button id="addButton">Add</button>
     </div>
     <div class="note">Add domains to block access.</div>
     <ul id="blockedList"></ul>
-    <script src="popup.js"></script>
   </body>
 </html>

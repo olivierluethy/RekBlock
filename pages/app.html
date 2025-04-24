@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Domain Blocker</title>
+    <link rel="icon" type="image/png" href="https://x.ai/favicon.png" />
+    <link rel="stylesheet" href="app.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>Domain Blocker</h1>
+        <p class="subtitle">Easily manage your blocked domains</p>
+      </header>
+      <section class="input-section">
+        <div class="input-group">
+          <input
+            type="text"
+            id="urlInput"
+            placeholder="Enter domain (e.g., example.com)"
+            aria-label="Domain input"
+          />
+          <button id="addButton">Add</button>
+        </div>
+      </section>
+      <section class="list-section">
+        <ul id="blockedList" aria-live="polite"></ul>
+      </section>
+      <footer class="footer">
+        <p class="note">
+          Developed and Designed by Olivier Lüthy
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
