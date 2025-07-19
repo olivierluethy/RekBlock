@@ -116,22 +116,24 @@ function renderBlockedList(blocked, editingIndex = null) {
         const newDomain = input.value.trim();
         const validatedDomain = getDomain(newDomain);
         if (!validatedDomain) {
-          alert(
-            "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein."
-          );
+          alert("Invalid domain. Please enter a valid domain with TLD.");
           return;
         }
+
         chrome.storage.sync.get("blocked", function (data) {
           let blocked = data.blocked || [];
           const newPattern = `*://${validatedDomain}/*`;
-          if (
-            blocked.includes(newPattern) &&
-            blocked.indexOf(newPattern) !== index
-          ) {
-            alert("Diese Domain ist bereits blockiert");
+
+          // Erzeuge eine Kopie der Liste ohne das aktuell bearbeitete Element
+          const filtered = blocked.filter((_, i) => i !== index);
+
+          if (filtered.includes(newPattern)) {
+            alert("This domain is already blocked");
             return;
           }
+
           blocked[index] = newPattern;
+
           chrome.storage.sync.set({ blocked: blocked }, function () {
             renderBlockedList(blocked);
           });
