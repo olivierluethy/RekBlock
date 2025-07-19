@@ -1,4 +1,3 @@
-// Liste bekannter zusammengesetzter TLDs
 const compoundTlds = [
   "co.uk",
   "com.au",
@@ -9,7 +8,6 @@ const compoundTlds = [
   "edu.au",
 ];
 
-// Funktion zum Extrahieren der Basisdomain
 function getBaseDomain(hostname) {
   const parts = hostname.split(".");
   if (parts.length > 2) {
@@ -23,7 +21,6 @@ function getBaseDomain(hostname) {
   return hostname;
 }
 
-// Funktion zum Verarbeiten der Eingabe und Extrahieren der Basisdomain
 function getDomain(input) {
   const domainRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
   let hostname = input.trim();
@@ -32,7 +29,7 @@ function getDomain(input) {
     let url = new URL(input.startsWith("http") ? input : `http://${input}`);
     hostname = url.hostname;
   } catch (e) {
-    // Wenn die URL-Parsing fehlschlägt, Eingabe unverändert verwenden
+    // If URL parsing fails, use input as is
   }
 
   if (!domainRegex.test(hostname)) {
@@ -43,57 +40,83 @@ function getDomain(input) {
   return baseDomain;
 }
 
-// Funktion zum Rend assay
 function renderBlockedList(blocked, editingIndex = null) {
   const ul = document.getElementById("blockedList");
   ul.innerHTML = "";
+  if (!blocked || blocked.length === 0) {
+    const li = document.createElement("li");
+    li.classList.add(
+      "list-group-item",
+      "text-center",
+      "text-muted",
+      "rounded-3",
+      "mb-2",
+      "bg-light",
+      "border",
+      "border-light",
+      "shadow-sm",
+      "animate__animated",
+      "animate__fadeIn"
+    );
+    li.textContent = "No URLs currently defined";
+    ul.appendChild(li);
+    return;
+  }
   blocked.forEach((pattern, index) => {
     const li = document.createElement("li");
+    li.classList.add(
+      "list-group-item",
+      "d-flex",
+      "justify-content-between",
+      "align-items-center",
+      "rounded-3",
+      "mb-2",
+      "bg-light",
+      "border",
+      "border-light",
+      "shadow-sm",
+      "animate__animated",
+      "animate__fadeInUp"
+    );
     if (index === editingIndex) {
       // Edit mode
       const domain = pattern.replace(/^\*:\/\/|\/\*$/g, "");
       li.innerHTML = `
-          <input type="text" class="edit-input" value="${domain}">
-          <div>
-            <button class="action-btn save" data-index="${index}">Save</button>
-            <button class="action-btn cancel" data-index="${index}">Cancel</button>
+          <input type="text" class="form-control form-control-sm me-2 rounded-3 shadow-sm" value="${domain}">
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm save rounded-3" data-index="${index}" style="--bs-btn-bg: #16a34a; --bs-btn-hover-bg: #15803d;">Save</button>
+            <button class="btn btn-secondary btn-sm cancel rounded-3" data-index="${index}" style="--bs-btn-bg: #6b7280; --bs-btn-hover-bg: #4b5563;">Cancel</button>
           </div>`;
     } else {
       // Display mode
       li.innerHTML = `
-          <span>${pattern}</span>
-          <div>
-            <button class="action-btn edit" data-index="${index}">Edit</button>
-            <button class="action-btn delete" data-index="${index}">Delete</button>
+          <span class="text-dark">${pattern}</span>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm edit rounded-3" data-index="${index}" style="--bs-btn-bg: #3b82f6; --bs-btn-hover-bg: #2563eb;">Edit</button>
+            <button class="btn btn-danger btn-sm delete rounded-3" data-index="${index}" style="--bs-btn-bg: #dc2626; --bs-btn-hover-bg: #b91c1c;">Delete</button>
           </div>`;
     }
     ul.appendChild(li);
   });
 
-  // Event-Listener für alle Buttons hinzufügen
-  document.querySelectorAll(".action-btn").forEach((button) => {
+  document.querySelectorAll(".btn").forEach((button) => {
     button.addEventListener("click", function () {
       const index = parseInt(this.dataset.index);
 
       if (this.classList.contains("delete")) {
-        // Sicherstellen, dass der Index richtig zugewiesen wird
         chrome.storage.sync.get("blocked", function (data) {
           let blocked = data.blocked || [];
-          // Element aus der Liste entfernen
           blocked.splice(index, 1);
           chrome.storage.sync.set({ blocked: blocked }, function () {
             renderBlockedList(blocked);
           });
         });
       } else if (this.classList.contains("save")) {
-        // Änderungen speichern
-        const input = document.querySelector(`li input.edit-input`);
+        const input = document.querySelector(`li input.form-control`);
         const newDomain = input.value.trim();
         const validatedDomain = getDomain(newDomain);
         if (!validatedDomain) {
-          alert(
-            "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein."
-          );
+          alert("Invalid domain. Please enter a valid domain with TLD.");
           return;
         }
         chrome.storage.sync.get("blocked", function (data) {
@@ -103,7 +126,7 @@ function renderBlockedList(blocked, editingIndex = null) {
             blocked.includes(newPattern) &&
             blocked.indexOf(newPattern) !== index
           ) {
-            alert("Diese Domain ist bereits blockiert");
+            alert("This domain is already blocked");
             return;
           }
           blocked[index] = newPattern;
@@ -112,46 +135,42 @@ function renderBlockedList(blocked, editingIndex = null) {
           });
         });
       } else if (this.classList.contains("cancel")) {
-        // Bearbeitung abbrechen
         chrome.storage.sync.get("blocked", function (data) {
           renderBlockedList(data.blocked || []);
         });
-      } else {
-        // In Bearbeitungsmodus wechseln
+      } else if (this.classList.contains("edit")) {
         renderBlockedList(blocked, index);
       }
     });
   });
 
-  // Event-Listener für Enter und Escape im Edit-Input
-  const editInput = document.querySelector(".edit-input");
+  const editInput = document.querySelector(".form-control");
   if (editInput) {
     editInput.focus();
     editInput.addEventListener("keypress", function (event) {
       if (event.key === "Enter") {
         document
-          .querySelector(`.action-btn.save[data-index="${editingIndex}"]`)
+          .querySelector(`.btn.save[data-index="${editingIndex}"]`)
           .click();
       }
     });
     editInput.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
         document
-          .querySelector(`.action-btn.cancel[data-index="${editingIndex}"]`)
+          .querySelector(`.btn.cancel[data-index="${editingIndex}"]`)
           .click();
       }
     });
   }
 }
 
-// Funktion zum Verarbeiten der Eingabe (für Button-Klick und Enter-Taste im oberen Eingabefeld)
 function handleSubmit() {
   const input = document.getElementById("urlInput").value.trim();
   const domain = getDomain(input);
 
   if (!domain) {
     alert(
-      "Ungültige Domain. Bitte geben Sie eine gültige Domain mit TLD ein (z. B. schindler.ch, example.com)."
+      "Invalid domain. Please enter a valid domain with TLD (e.g., schindler.ch, example.com)."
     );
     return;
   }
@@ -161,42 +180,24 @@ function handleSubmit() {
   chrome.storage.sync.get("blocked", function (data) {
     let blocked = data.blocked || [];
     if (blocked.includes(pattern)) {
-      alert("Diese Domain ist bereits blockiert");
+      alert("This domain is already blocked");
       return;
     }
     blocked.push(pattern);
     chrome.storage.sync.set({ blocked: blocked }, function () {
-      const ul = document.getElementById("blockedList");
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${pattern}</span>
-                      <div>
-                        <button class="action-btn edit" data-index="${
-                          blocked.length - 1
-                        }">Edit</button>
-                        <button class="action-btn delete" data-index="${
-                          blocked.length - 1
-                        }">Delete</button>
-                      </div>`;
-      li.classList.add("new");
-      ul.appendChild(li);
-      setTimeout(() => li.classList.remove("new"), 1000);
-      //   alert(`Erfolgreich ${domain} und deren Subdomains blockiert.`);
       document.getElementById("urlInput").value = "";
+      renderBlockedList(blocked); // <--- hier wird die Liste korrekt neu gerendert
     });
   });
 }
 
-// Event-Listener beim Laden des Dokuments
 document.addEventListener("DOMContentLoaded", function () {
-  // Blockierte URLs aus dem Speicher laden und anzeigen
   chrome.storage.sync.get("blocked", function (data) {
     renderBlockedList(data.blocked || []);
   });
 
-  // Hinzufügen einer blockierten URL per Button-Klick
   document.getElementById("addButton").addEventListener("click", handleSubmit);
 
-  // Hinzufügen einer blockierten URL per Enter-Taste
   document
     .getElementById("urlInput")
     .addEventListener("keypress", function (event) {
