@@ -211,6 +211,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
   document.getElementById("fullScreen").addEventListener("click", function () {
-    chrome.tabs.create({ url: chrome.runtime.getURL("/pages/app.html") });
+    const appUrl = chrome.runtime.getURL("/pages/app.html");
+
+    chrome.tabs.query({ url: appUrl }, function (tabs) {
+      if (tabs.length > 0) {
+        // Ein Tab mit der URL existiert bereits
+        const existingTab = tabs[0]; // Nimm den ersten passenden Tab
+        chrome.tabs.update(existingTab.id, { active: true }, () => {
+          chrome.windows.update(existingTab.windowId, { focused: true });
+        });
+      } else {
+        // Kein Tab mit der URL existiert, erstelle einen neuen
+        chrome.tabs.create({ url: appUrl });
+      }
+    });
   });
 });

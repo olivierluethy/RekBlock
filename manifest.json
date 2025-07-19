@@ -3,7 +3,7 @@
   "name": "URL Blocker",
   "version": "1.0",
   "description": "A simple extension to block URLs.",
-  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>", "storage"],
+  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>", "storage", "tabs"],
   "icons": {
     "16": "icon/icon16.png",
     "48": "icon/icon48.png",
