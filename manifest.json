@@ -1,19 +1,26 @@
 {
-  "manifest_version": 2,
-  "name": "URL Blocker",
-  "version": "1.0",
-  "description": "A simple extension to block URLs.",
-  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>", "storage", "tabs"],
+  "manifest_version": 3,
+  "name": "Web Site Blocker",
+  "version": "1.1.0",
+  "description": "Block distracting websites and URLs to stay focused. Simple Chrome extension for productivity and website blocking.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "icons": {
-    "16": "icon/icon16.png",
-    "48": "icon/icon48.png",
+    "16":  "icon/icon16.png",
+    "48":  "icon/icon48.png",
     "128": "icon/icon128.png"
   },
-  "background": {
-    "scripts": ["background.js"],
-    "persistent": true
-  },
-  "browser_action": {
+  "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }

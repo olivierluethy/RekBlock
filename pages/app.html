@@ -70,24 +70,11 @@
         background-color: #4b5563;
         border-color: #4b5563;
       }
-
-      .routine-card {
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      .weekday-checkboxes label {
-        margin-right: 10px;
-      }
     </style>
   </head>
 
   <body class="d-flex justify-content-center align-items-start p-4 min-vh-100">
-    <main
-      id="mainPage"
-      class="container card-glass rounded-4 p-4"
-      style="max-width: 32rem"
-    >
+    <main class="container card-glass rounded-4 p-4" style="max-width: 32rem">
       <header class="text-center mb-4">
         <h1
           class="fs-3 fw-bold text-dark animate__animated animate__slideInDown"
@@ -114,17 +101,6 @@
             placeholder="Enter domain (e.g., example.com)"
             aria-label="Domain input"
           />
-          <select id="blockType" class="form-select" style="max-width: 120px">
-            <option value="block">Block</option>
-            <option value="redirect">Redirect</option>
-          </select>
-          <input
-            type="text"
-            id="redirectUrl"
-            class="form-control"
-            placeholder="Redirect URL (optional)"
-            style="display: none"
-          />
           <button
             id="addButton"
             class="btn btn-primary rounded-end-3 shadow-sm"
@@ -142,58 +118,9 @@
           aria-live="polite"
         ></ul>
       </section>
-
-      <footer class="text-center pt-3">
-        <p class="text-muted fs-6">Developed & Designed by Olivier Lüthy</p>
-      </footer>
     </main>
 
-    <div
-      id="routinePage"
-      class="container card-glass rounded-4 p-4 d-none routine-card"
-    >
-      <header class="text-center mb-4">
-        <h1 class="fs-3 fw-bold text-dark">
-          Manage Routines for <span id="routineDomain"></span>
-        </h1>
-        <button id="backButton" class="btn btn-secondary mt-2">
-          Back to Main
-        </button>
-      </header>
-
-      <section class="mb-4">
-        <h3>Add New Routine</h3>
-        <div class="row g-3">
-          <div class="col-md-3">
-            <input type="time" id="startTime" class="form-control" />
-          </div>
-          <div class="col-md-3">
-            <input type="time" id="endTime" class="form-control" />
-          </div>
-          <div class="col-md-6 weekday-checkboxes">
-            <label><input type="checkbox" value="0" /> Sun</label>
-            <label><input type="checkbox" value="1" /> Mon</label>
-            <label><input type="checkbox" value="2" /> Tue</label>
-            <label><input type="checkbox" value="3" /> Wed</label>
-            <label><input type="checkbox" value="4" /> Thu</label>
-            <label><input type="checkbox" value="5" /> Fri</label>
-            <label><input type="checkbox" value="6" /> Sat</label>
-          </div>
-          <div class="col-12">
-            <button id="addRoutineButton" class="btn btn-primary">
-              Add Routine
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h3>Routines</h3>
-        <ul id="routineList" class="list-group"></ul>
-      </section>
-    </div>
-
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS (optional if you use dropdowns, modals, etc.) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("fullScreen").addEventListener("click", function () {
     const appUrl = chrome.runtime.getURL("/pages/app.html");
 
-    chrome.tabs.query({ url: appUrl }, function (tabs) {
+    chrome.tabs.query({ url: appUrl }, (tabs) => {
       if (tabs.length > 0) {
         // Ein Tab mit der URL existiert bereits
         const existingTab = tabs[0]; // Nimm den ersten passenden Tab
@@ -227,3 +227,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
+document.getElementById("reportBtn").addEventListener("click", ()=>{
+  window.open("https://forms.gle/7YXi5qjtyi4foTNr7");
+})
+document.getElementById("requestBtn").addEventListener("click", ()=>{
+  window.open("https://forms.gle/gv67rcBSrtHDpn2v6");
+})

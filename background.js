@@ -1,43 +1,57 @@
-let blocked = [];
+// In MV3 service workers are event-driven and terminated when idle
 
-// Funktion zum Aktualisieren der blockierten Liste aus dem Speicher
-function updateBlocked() {
-  chrome.storage.sync.get("blocked", function (data) {
-    blocked = data.blocked || [];
-  });
-}
+let cachedBlocked = [];
 
-// Initiales Laden der blockierten URLs
-updateBlocked();
+// Load once at startup
+chrome.storage.sync.get("blocked", (data) => {
+  cachedBlocked = data.blocked || [];
+  updateDynamicRules();
+});
 
-// Auf Änderungen im Speicher lauschen
-chrome.storage.onChanged.addListener(function (changes, namespace) {
+// Listen for storage changes (popup changes → storage → here)
+chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === "sync" && changes.blocked) {
-    blocked = changes.blocked.newValue || [];
+    cachedBlocked = changes.blocked.newValue || [];
+    updateDynamicRules();
   }
 });
 
-// URLs mit webRequest blockieren
-chrome.webRequest.onBeforeRequest.addListener(
-  function (details) {
-    try {
-      const parsed = new URL(details.url);
-      const hostname = parsed.hostname.toLowerCase();
-      for (let pattern of blocked) {
-        // Basisdomain aus dem Muster extrahieren (entferne *:// und /*)
-        const domain = pattern.replace(/^\*:\/\/(.+)\/\*$/, "$1").toLowerCase();
-        // Prüfen, ob Hostname die Domain oder eine Subdomain ist
-        if (hostname === domain || hostname.endsWith("." + domain)) {
-          if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-            return { cancel: true };
-          }
+async function updateDynamicRules() {
+  try {
+    // 1. Remove all previous dynamic rules (safest approach)
+    const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const oldRuleIds = oldRules.map(r => r.id);
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: oldRuleIds
+    });
+
+    // 2. Build new rules
+    const newRules = cachedBlocked.map((pattern, index) => {
+      // pattern = "*://example.com/*"  or  "*://*.example.com/*"
+      let domain = pattern
+        .replace(/^\*:\/\/|\*\/$/g, "")
+        .replace(/^\*\./, ""); // remove *://  and  /*   and leading *.
+
+      return {
+        id: index + 1,               // IDs must be 1 … 30000
+        priority: 1,
+        action: { type: "block" },
+        condition: {
+          urlFilter: `||${domain}^`, // ||domain^  = domain + all subdomains
+          resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "other"]
+          // You can remove some types if you only want to block pages
         }
-      }
-    } catch (e) {
-      // Ungültige URL, überspringen
+      };
+    });
+
+    // 3. Add new rules (max ~ 30 000 dynamic rules, but 5 000 is soft limit)
+    if (newRules.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: newRules
+      });
     }
-    return {};
-  },
-  { urls: ["<all_urls>"] },
-  ["blocking"]
-);
+
+  } catch (err) {
+    console.error("Failed to update DNR rules:", err);
+  }
+}
