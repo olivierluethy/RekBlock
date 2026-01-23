@@ -19,90 +19,114 @@
       rel="stylesheet"
     />
     <script src="popup.js" defer></script>
+    <style>
+      .category-card { transition: all 0.2s; cursor: pointer; }
+      .category-card:hover { background-color: #f8f9fa; transform: translateY(-2px); }
+      .hover-scale:hover { transform: scale(1.05); }
+    </style>
   </head>
   <body
     class="bg-light-subtle font-inter p-4 min-vh-100 d-flex flex-column"
     style="width: 400px"
   >
+    <!-- Top Navigation Row -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-  <!-- Linke Seite: Bug & Feature -->
-  <div class="d-flex gap-1">
-    <button
-    id="reportBtn"
-      type="button"
-      class="btn btn-outline-danger btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale"
-      title="Report Bug"
-    >
-      <svg xmlns="http://www.w3.org" width="14" height="14" fill="currentColor" class="bi bi-bug" viewBox="0 0 16 16">
-        <path d="M4.355.522a.5.5 0 0 1 .623.333l.291.956A4.905 4.905 0 0 1 8 1c1.007 0 1.946.303 2.73.823l.292-.956a.5.5 0 1 1 .956.291l-.279.916c.59.416 1.057.973 1.353 1.631l.845-.423a.5.5 0 0 1 .447.894l-.823.411c.249.42.408.897.462 1.405l.942.213a.5.5 0 1 1-.22.975l-.943-.214a5.074 5.074 0 0 1-.135 1.026l.893.447a.5.5 0 1 1-.447.894l-.893-.447a5.09 5.09 0 0 1-.746 1.168l.86.86a.5.5 0 0 1-.707.707l-.86-.86a5.07 5.07 0 0 1-1.026.541l.213.943a.5.5 0 0 1-.975.22l-.214-.943a4.913 4.913 0 0 1-1.558 0l-.214.943a.5.5 0 1 1-.975-.22l.213-.943a5.07 5.07 0 0 1-1.026-.541l-.86.86a.5.5 0 1 1-.707-.707l.86-.86a5.09 5.09 0 0 1-.746-1.168l-.893.447a.5.5 0 1 1-.447-.894l.893-.447a5.074 5.074 0 0 1-.135-1.026l-.943.214a.5.5 0 1 1-.22-.975l.942-.213A5.07 5.07 0 0 1 2 6c0-.508.153-.985.402-1.405l-.823-.411a.5.5 0 0 1 .447-.894l.845.423a4.905 4.905 0 0 1 1.353-1.631l-.279-.916a.5.5 0 0 1 .333-.623zM4.5 6v2a3.5 3.5 0 0 0 7 0V6a3.5 3.5 0 0 0-7 0"/>
-      </svg>
-    </button>
-    <button
-    id="requestBtn"
-      type="button"
-      class="btn btn-outline-info btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale"
-      title="Request Feature"
-    >
-      <svg xmlns="http://www.w3.org" width="14" height="14" fill="currentColor" class="bi bi-lightbulb" viewBox="0 0 16 16">
-        <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13h-5a.5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6m6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1"/>
-        <path d="M7.703 14.962a.75.75 0 0 1 .594 0l.334.148c.307.136.324.555.059.716a1.27 1.27 0 0 1-1.38 0c-.265-.16-.248-.58.058-.716l.335-.148ZM5.5 14a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H6a.5.5 0 0 1-.5-.5"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Rechte Seite: Full Screen -->
-  <button
-    id="fullScreen"
-    type="button"
-    class="btn btn-primary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale animate__animated animate__pulse animate__infinite animate__slow"
-    style="--bs-btn-hover-bg: #3b4cca"
-  >
-    <img
-      src="full-screen.png"
-      alt="Full Screen Icon"
-      class="me-2"
-      style="width: 18px; height: 18px; filter: brightness(0) invert(1)"
-    />
-    Full Screen
-  </button>
-</div>
-
-
-    <h1
-      class="text-center fw-bold mb-4 text-primary animate__animated animate__slideInDown"
-    >
-      Block URL
-    </h1>
-
-    <div class="input-group mb-3 animate__animated animate__fadeInUp">
-      <input
-        type="text"
-        id="urlInput"
-        class="form-control rounded-start-3 shadow-sm"
-        placeholder="Enter domain to block (e.g., example.com)"
-        aria-label="Domain to block"
-      />
-      <button
-        id="addButton"
-        type="button"
-        class="btn btn-primary rounded-end-3 shadow-sm transition-transform hover-scale"
-        style="--bs-btn-hover-bg: #3b4cca"
-      >
-        Add
+      <div class="d-flex gap-1">
+        <button id="reportBtn" type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Report Bug">
+          <svg xmlns="http://www.w3.org" width="14" height="14" fill="currentColor" class="bi bi-bug" viewBox="0 0 16 16">
+            <path d="M4.355.522a.5.5 0 0 1 .623.333l.291.956A4.905 4.905 0 0 1 8 1c1.007 0 1.946.303 2.73.823l.292-.956a.5.5 0 1 1 .956.291l-.279.916c.59.416 1.057.973 1.353 1.631l.845-.423a.5.5 0 0 1 .447.894l-.823.411c.249.42.408.897.462 1.405l.942.213a.5.5 0 1 1-.22.975l-.943-.214a5.074 5.074 0 0 1-.135 1.026l.893.447a.5.5 0 1 1-.447.894l-.893-.447a5.09 5.09 0 0 1-.746 1.168l.86.86a.5.5 0 0 1-.707.707l-.86-.86a5.07 5.07 0 0 1-1.026.541l.213.943a.5.5 0 0 1-.975.22l-.214-.943a4.913 4.913 0 0 1-1.558 0l-.214.943a.5.5 0 1 1-.975-.22l.213-.943a5.07 5.07 0 0 1-1.026-.541l-.86.86a.5.5 0 1 1-.707-.707l.86-.86a5.09 5.09 0 0 1-.746-1.168l-.893.447a.5.5 0 1 1-.447-.894l.893-.447a5.074 5.074 0 0 1-.135-1.026l-.943.214a.5.5 0 1 1-.22-.975l.942-.213A5.07 5.07 0 0 1 2 6c0-.508.153-.985.402-1.405l-.823-.411a.5.5 0 0 1 .447-.894l.845.423a4.905 4.905 0 0 1 1.353-1.631l-.279-.916a.5.5 0 0 1 .333-.623zM4.5 6v2a3.5 3.5 0 0 0 7 0V6a3.5 3.5 0 0 0-7 0"/>
+          </svg>
+        </button>
+        <button id="requestBtn" type="button" class="btn btn-outline-info btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Request Feature">
+          <svg xmlns="http://www.w3.org" width="14" height="14" fill="currentColor" class="bi bi-lightbulb" viewBox="0 0 16 16">
+            <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13h-5a.5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6m6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1"/>
+          </svg>
+        </button>
+      </div>
+      <button id="fullScreen" type="button" class="btn btn-primary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale animate__animated animate__pulse animate__infinite animate__slow">
+        Full Screen
       </button>
     </div>
 
-    <div
-      class="text-center text-secondary small mb-3 animate__animated animate__fadeIn"
-    >
-      Add domains to block access to websites.
+    <h1 class="text-center fw-bold mb-4 text-primary animate__animated animate__slideInDown">URL Blocker</h1>
+
+    <!-- Custom URL Input -->
+    <div class="input-group mb-3 animate__animated animate__fadeInUp">
+      <input type="text" id="urlInput" class="form-control rounded-start-3 shadow-sm" placeholder="Enter domain (e.g., example.com)" />
+      <button id="addButton" type="button" class="btn btn-primary rounded-end-3 shadow-sm">Add</button>
     </div>
 
-    <ul
-      id="blockedList"
-      class="list-group overflow-auto"
-      style="max-height: 300px"
-    >
+    <!-- QUICK BLOCK CATEGORIES (New Section) -->
+        <!-- QUICK BLOCK CATEGORIES -->
+    <div class="mb-4 animate__animated animate__fadeIn">
+      <h6 class="fw-bold text-secondary mb-2">Quick Block Categories</h6>
+      <style>
+        /* This makes the entire rectangle feel like a clickable button */
+        .category-toggle {
+          cursor: pointer;
+          border: 1px solid #dee2e6;
+          transition: all 0.2s ease;
+          user-select: none;
+        }
+        .category-toggle:hover {
+          background-color: #f0f2f5;
+          border-color: #0d6efd;
+        }
+        /* Visual change when the checkbox inside is checked */
+        .category-toggle:has(input:checked) {
+          background-color: #e7f1ff;
+          border-color: #0d6efd;
+          color: #0a58ca;
+        }
+      </style>
+      
+      <div class="row g-2">
+        <!-- News Category -->
+        <div class="col-6">
+          <label class="category-toggle d-flex justify-content-between align-items-center p-2 rounded-3 w-100">
+            <span>📰 News</span>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input category-checkbox" type="checkbox" id="checkNews" role="switch">
+            </div>
+          </label>
+        </div>
+        
+        <!-- Social Category -->
+        <div class="col-6">
+          <label class="category-toggle d-flex justify-content-between align-items-center p-2 rounded-3 w-100">
+            <span>👥 Social</span>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input category-checkbox" type="checkbox" id="checkSocial" role="switch">
+            </div>
+          </label>
+        </div>
+
+        <!-- Gaming Category -->
+        <div class="col-6">
+          <label class="category-toggle d-flex justify-content-between align-items-center p-2 rounded-3 w-100">
+            <span>🎮 Gaming</span>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input category-checkbox" type="checkbox" id="checkGaming" role="switch">
+            </div>
+          </label>
+        </div>
+
+        <!-- Sports Category -->
+        <div class="col-6">
+          <label class="category-toggle d-flex justify-content-between align-items-center p-2 rounded-3 w-100">
+            <span>⚽ Sports</span>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input category-checkbox" type="checkbox" id="checkSports" role="switch">
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Blocked List Section -->
+    <h6 class="fw-bold text-secondary mb-2">Blocked Domains</h6>
+    <ul id="blockedList" class="list-group overflow-auto flex-grow-1" style="max-height: 200px">
       <!-- Dynamically added <li> items here -->
     </ul>
   </body>

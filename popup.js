@@ -1,3 +1,32 @@
+// 1. Define the Category URLs
+const categoryLists = {
+  checkSports: [
+    "*://espn.com*",
+    "*://bleacherreport.com*",
+    "*://sports.yahoo.com*",
+    "*://skysports.com*",
+    "*://fifa.com*"
+  ],
+  checkNews: [
+    "*://edition.cnn.com*",
+    "*://bbc.com*",
+    "*://reuters.com*",
+    "*://nytimes.com*"
+  ],
+  checkGaming: [
+    "*://twitch.tv/*",
+    "*://ign.com*",
+    "*://gamespot.com*",
+    "*://roblox.com*"
+  ],
+  checkSocial: [
+    "*://facebook.com*",
+    "*://instagram.com*",
+    "*://tiktok.com*",
+    "*://x.com*"
+  ]
+};
+
 const compoundTlds = [
   "co.uk",
   "com.au",
@@ -224,6 +253,47 @@ document.addEventListener("DOMContentLoaded", function () {
         // Kein Tab mit der URL existiert, erstelle einen neuen
         chrome.tabs.create({ url: appUrl });
       }
+    });
+  });
+
+  // Logic for toggling Categories
+  const checkboxes = document.querySelectorAll(".category-checkbox");
+
+  checkboxes.forEach((checkbox) => {
+    // On popup load, check if the category is already active in the blocked list
+    chrome.storage.sync.get("blocked", function (data) {
+      const blocked = data.blocked || [];
+      const categoryUrls = categoryLists[checkbox.id];
+      // If the first URL of the category is in the list, show the toggle as ON
+      if (categoryUrls && blocked.includes(categoryUrls[0])) {
+        checkbox.checked = true;
+      }
+    });
+
+    // Handle the Toggle Click
+    checkbox.addEventListener("change", function () {
+      const categoryId = this.id;
+      const urlsToToggle = categoryLists[categoryId];
+
+      chrome.storage.sync.get("blocked", function (data) {
+        let blocked = data.blocked || [];
+
+        if (checkbox.checked) {
+          // Add URLs if they aren't already there
+          urlsToToggle.forEach((url) => {
+            if (!blocked.includes(url)) {
+              blocked.push(url);
+            }
+          });
+        } else {
+          // Remove URLs when switched off
+          blocked = blocked.filter((url) => !urlsToToggle.includes(url));
+        }
+
+        chrome.storage.sync.set({ blocked: blocked }, function () {
+          renderBlockedList(blocked);
+        });
+      });
     });
   });
 });
