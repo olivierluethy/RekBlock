@@ -9,6 +9,12 @@ function domainFromInput(input) {
   return getDomain(input)?.toLowerCase();
 }
 
+function isDomainInAnyCategory(domain) {
+  return Object.values(categoryLists).some((patterns) =>
+    patterns.some((pattern) => normalizePattern(pattern) === domain),
+  );
+}
+
 function findCategoryByDomain(domain) {
   for (const [category, patterns] of Object.entries(categoryLists)) {
     for (const pattern of patterns) {
@@ -95,7 +101,14 @@ function getDomain(input) {
 function renderBlockedList(blocked, editingIndex = null) {
   const ul = document.getElementById("blockedList");
   ul.innerHTML = "";
-  if (!blocked || blocked.length === 0) {
+
+  // 🔑 Only show manually added domains
+  const visibleBlocked = blocked.filter((pattern) => {
+    const domain = normalizePattern(pattern);
+    return !isDomainInAnyCategory(domain);
+  });
+
+  if (visibleBlocked.length === 0) {
     const li = document.createElement("li");
     li.classList.add(
       "list-group-item",
@@ -106,16 +119,17 @@ function renderBlockedList(blocked, editingIndex = null) {
       "bg-light",
       "border",
       "border-light",
-      "shadow-sm",
-      "animate__animated",
-      "animate__fadeIn",
+      "shadow-sm"
     );
     li.textContent = "No URLs currently defined";
     ul.appendChild(li);
     return;
   }
-  blocked.forEach((pattern, index) => {
+
+  visibleBlocked.forEach((pattern) => {
+    const realIndex = blocked.indexOf(pattern);
     const li = document.createElement("li");
+
     li.classList.add(
       "list-group-item",
       "d-flex",
@@ -126,133 +140,120 @@ function renderBlockedList(blocked, editingIndex = null) {
       "bg-light",
       "border",
       "border-light",
-      "shadow-sm",
-      "animate__animated",
-      "animate__fadeInUp",
+      "shadow-sm"
     );
-    if (index === editingIndex) {
-      // Edit mode
-      const domain = pattern.replace(/^\*:\/\/|\/\*$/g, "");
+
+    if (realIndex === editingIndex) {
+      const domain = normalizePattern(pattern);
       li.innerHTML = `
-          <input type="text" class="form-control form-control-sm me-2 rounded-3 shadow-sm" value="${domain}">
-          <div class="d-flex gap-2">
-            <button class="btn btn-success btn-sm save rounded-3" data-index="${index}" style="--bs-btn-bg: #16a34a; --bs-btn-hover-bg: #15803d;">Save</button>
-            <button class="btn btn-secondary btn-sm cancel rounded-3" data-index="${index}" style="--bs-btn-bg: #6b7280; --bs-btn-hover-bg: #4b5563;">Cancel</button>
-          </div>`;
+        <input class="form-control form-control-sm me-2" value="${domain}">
+        <div class="d-flex gap-2">
+          <button class="btn btn-success btn-sm save" data-index="${realIndex}">Save</button>
+          <button class="btn btn-secondary btn-sm cancel" data-index="${realIndex}">Cancel</button>
+        </div>
+      `;
     } else {
-      // Display mode
       li.innerHTML = `
-          <span class="text-dark">${pattern}</span>
-          <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm edit rounded-3" data-index="${index}" style="--bs-btn-bg: #3b82f6; --bs-btn-hover-bg: #2563eb;">Edit</button>
-            <button class="btn btn-danger btn-sm delete rounded-3" data-index="${index}" style="--bs-btn-bg: #dc2626; --bs-btn-hover-bg: #b91c1c;">Delete</button>
-          </div>`;
+        <span>${pattern}</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm edit" data-index="${realIndex}">Edit</button>
+          <button class="btn btn-danger btn-sm delete" data-index="${realIndex}">Delete</button>
+        </div>
+      `;
     }
+
     ul.appendChild(li);
   });
 
+  // 🔘 Button click handlers
   document.querySelectorAll(".btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const index = parseInt(this.dataset.index);
+      const index = parseInt(this.dataset.index, 10);
 
-      if (this.classList.contains("delete")) {
-        chrome.storage.sync.get("blocked", function (data) {
-          let blocked = data.blocked || [];
+      if (this.classList.contains("edit")) {
+        renderBlockedList(blocked, index);
+        return;
+      }
+
+      if (this.classList.contains("cancel")) {
+        renderBlockedList(blocked);
+        return;
+      }
+
+      chrome.storage.sync.get("blocked", (data) => {
+        let blocked = data.blocked || [];
+
+        if (this.classList.contains("delete")) {
           blocked.splice(index, 1);
-          chrome.storage.sync.set({ blocked: blocked }, function () {
-            renderBlockedList(blocked);
-          });
-        });
-      } else if (this.classList.contains("save")) {
-        const input = document.querySelector(`li input.form-control`);
-        const newDomain = input.value.trim();
-        const validatedDomain = getDomain(newDomain);
-        if (!validatedDomain) {
-          alert("Invalid domain. Please enter a valid domain with TLD.");
-          return;
         }
 
-        chrome.storage.sync.get("blocked", function (data) {
-          let blocked = data.blocked || [];
-          const newPattern = `*://${validatedDomain}/*`;
+        if (this.classList.contains("save")) {
+          const input = document.querySelector("li input");
+          const domain = domainFromInput(input.value);
 
-          // Erzeuge eine Kopie der Liste ohne das aktuell bearbeitete Element
-          const filtered = blocked.filter((_, i) => i !== index);
-
-          if (filtered.includes(newPattern)) {
-            alert("This domain is already blocked");
+          if (!domain) {
+            alert("Invalid domain");
             return;
           }
 
-          blocked[index] = newPattern;
+          if (isDomainInAnyCategory(domain)) {
+            alert("This domain belongs to a category.");
+            return;
+          }
 
-          chrome.storage.sync.set({ blocked: blocked }, function () {
-            renderBlockedList(blocked);
-          });
+          blocked[index] = `*://${domain}/*`;
+        }
+
+        chrome.storage.sync.set({ blocked }, () => {
+          renderBlockedList(blocked);
         });
-      } else if (this.classList.contains("cancel")) {
-        chrome.storage.sync.get("blocked", function (data) {
-          renderBlockedList(data.blocked || []);
-        });
-      } else if (this.classList.contains("edit")) {
-        renderBlockedList(blocked, index);
-      }
+      });
     });
   });
 
-  const editInput = document.querySelector(".form-control");
+  // 🔑 Enable Enter / Escape while editing (✅ CORRECT PLACE)
+  const editInput = document.querySelector("li input");
   if (editInput) {
     editInput.focus();
-    editInput.addEventListener("keypress", function (event) {
-      if (event.key === "Enter") {
-        document
-          .querySelector(`.btn.save[data-index="${editingIndex}"]`)
-          .click();
+
+    editInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        document.querySelector(".btn.save")?.click();
       }
-    });
-    editInput.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        document
-          .querySelector(`.btn.cancel[data-index="${editingIndex}"]`)
-          .click();
+      if (e.key === "Escape") {
+        document.querySelector(".btn.cancel")?.click();
       }
     });
   }
 }
+
 
 function handleSubmit() {
   const input = document.getElementById("urlInput").value.trim();
   const domain = domainFromInput(input);
 
   if (!domain) {
-    alert("Invalid domain. Please enter a valid domain.");
+    alert("Invalid domain");
     return;
   }
 
-  const newPattern = `*://${domain}/*`;
+  if (isDomainInAnyCategory(domain)) {
+    alert("This domain is already blocked via a category.");
+    return;
+  }
 
-  chrome.storage.sync.get("blocked", function (data) {
+  chrome.storage.sync.get("blocked", (data) => {
     const blocked = data.blocked || [];
 
-    // 1️⃣ Check if already blocked (normalized)
-    const alreadyBlocked = blocked.some((p) => normalizePattern(p) === domain);
+    const exists = blocked.some((p) => normalizePattern(p) === domain);
 
-    if (alreadyBlocked) {
+    if (exists) {
       alert("This domain is already blocked.");
       return;
     }
 
-    // 2️⃣ Check if part of a category
-    const category = findCategoryByDomain(domain);
-    if (category) {
-      alert(`This domain is already included in the "${category}" category.`);
-      return;
-    }
-
-    // 3️⃣ Add it
-    blocked.push(newPattern);
-
-    chrome.storage.sync.set({ blocked }, function () {
+    blocked.push(`*://${domain}/*`);
+    chrome.storage.sync.set({ blocked }, () => {
       document.getElementById("urlInput").value = "";
       renderBlockedList(blocked);
     });
@@ -311,33 +312,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Handle the Toggle Click
     checkbox.addEventListener("change", function () {
-      const categoryId = this.id;
-      const urlsToToggle = categoryLists[categoryId];
+      const urls = categoryLists[this.id];
 
-      chrome.storage.sync.get("blocked", function (data) {
+      chrome.storage.sync.get("blocked", (data) => {
         let blocked = data.blocked || [];
 
-        if (checkbox.checked) {
-          // Add URLs if they aren't already there
-          urlsToToggle.forEach((url) => {
+        if (this.checked) {
+          urls.forEach((url) => {
             const domain = normalizePattern(url);
-
-            const exists = blocked.some((p) => normalizePattern(p) === domain);
-
-            if (!exists) {
+            if (!blocked.some((p) => normalizePattern(p) === domain)) {
               blocked.push(`*://${domain}/*`);
             }
           });
         } else {
-          // Remove URLs when switched off
-          const domainsToRemove = urlsToToggle.map(normalizePattern);
-
+          const domains = urls.map(normalizePattern);
           blocked = blocked.filter(
-            (p) => !domainsToRemove.includes(normalizePattern(p)),
+            (p) => !domains.includes(normalizePattern(p)),
           );
         }
 
-        chrome.storage.sync.set({ blocked: blocked }, function () {
+        chrome.storage.sync.set({ blocked }, () => {
           renderBlockedList(blocked);
         });
       });
