@@ -1,3 +1,25 @@
+function normalizePattern(pattern) {
+  return pattern
+    .replace(/^\*:\/\/|\/?\*$/g, "")
+    .replace(/\/$/, "")
+    .toLowerCase();
+}
+
+function domainFromInput(input) {
+  return getDomain(input)?.toLowerCase();
+}
+
+function findCategoryByDomain(domain) {
+  for (const [category, patterns] of Object.entries(categoryLists)) {
+    for (const pattern of patterns) {
+      if (normalizePattern(pattern) === domain) {
+        return category;
+      }
+    }
+  }
+  return null;
+}
+
 // 1. Define the Category URLs
 const categoryLists = {
   checkSports: [
@@ -5,26 +27,27 @@ const categoryLists = {
     "*://bleacherreport.com*",
     "*://sports.yahoo.com*",
     "*://skysports.com*",
-    "*://fifa.com*"
+    "*://fifa.com*",
   ],
   checkNews: [
+    "*://srf.ch*",
     "*://edition.cnn.com*",
     "*://bbc.com*",
     "*://reuters.com*",
-    "*://nytimes.com*"
+    "*://nytimes.com*",
   ],
   checkGaming: [
     "*://twitch.tv/*",
     "*://ign.com*",
     "*://gamespot.com*",
-    "*://roblox.com*"
+    "*://roblox.com*",
   ],
   checkSocial: [
     "*://facebook.com*",
     "*://instagram.com*",
     "*://tiktok.com*",
-    "*://x.com*"
-  ]
+    "*://x.com*",
+  ],
 };
 
 const compoundTlds = [
@@ -85,7 +108,7 @@ function renderBlockedList(blocked, editingIndex = null) {
       "border-light",
       "shadow-sm",
       "animate__animated",
-      "animate__fadeIn"
+      "animate__fadeIn",
     );
     li.textContent = "No URLs currently defined";
     ul.appendChild(li);
@@ -105,7 +128,7 @@ function renderBlockedList(blocked, editingIndex = null) {
       "border-light",
       "shadow-sm",
       "animate__animated",
-      "animate__fadeInUp"
+      "animate__fadeInUp",
     );
     if (index === editingIndex) {
       // Edit mode
@@ -199,27 +222,39 @@ function renderBlockedList(blocked, editingIndex = null) {
 
 function handleSubmit() {
   const input = document.getElementById("urlInput").value.trim();
-  const domain = getDomain(input);
+  const domain = domainFromInput(input);
 
   if (!domain) {
-    alert(
-      "Invalid domain. Please enter a valid domain with TLD (e.g., schindler.ch, example.com)."
-    );
+    alert("Invalid domain. Please enter a valid domain.");
     return;
   }
 
-  const pattern = `*://${domain}/*`;
+  const newPattern = `*://${domain}/*`;
 
   chrome.storage.sync.get("blocked", function (data) {
-    let blocked = data.blocked || [];
-    if (blocked.includes(pattern)) {
-      alert("This domain is already blocked");
+    const blocked = data.blocked || [];
+
+    // 1️⃣ Check if already blocked (normalized)
+    const alreadyBlocked = blocked.some((p) => normalizePattern(p) === domain);
+
+    if (alreadyBlocked) {
+      alert("This domain is already blocked.");
       return;
     }
-    blocked.push(pattern);
-    chrome.storage.sync.set({ blocked: blocked }, function () {
+
+    // 2️⃣ Check if part of a category
+    const category = findCategoryByDomain(domain);
+    if (category) {
+      alert(`This domain is already included in the "${category}" category.`);
+      return;
+    }
+
+    // 3️⃣ Add it
+    blocked.push(newPattern);
+
+    chrome.storage.sync.set({ blocked }, function () {
       document.getElementById("urlInput").value = "";
-      renderBlockedList(blocked); // <--- hier wird die Liste korrekt neu gerendert
+      renderBlockedList(blocked);
     });
   });
 }
@@ -265,9 +300,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const blocked = data.blocked || [];
       const categoryUrls = categoryLists[checkbox.id];
       // If the first URL of the category is in the list, show the toggle as ON
-      if (categoryUrls && blocked.includes(categoryUrls[0])) {
-        checkbox.checked = true;
-      }
+      const categoryDomains = categoryUrls.map(normalizePattern);
+
+      const blockedDomains = blocked.map(normalizePattern);
+
+      checkbox.checked = categoryDomains.every((domain) =>
+        blockedDomains.includes(domain),
+      );
     });
 
     // Handle the Toggle Click
@@ -281,13 +320,21 @@ document.addEventListener("DOMContentLoaded", function () {
         if (checkbox.checked) {
           // Add URLs if they aren't already there
           urlsToToggle.forEach((url) => {
-            if (!blocked.includes(url)) {
-              blocked.push(url);
+            const domain = normalizePattern(url);
+
+            const exists = blocked.some((p) => normalizePattern(p) === domain);
+
+            if (!exists) {
+              blocked.push(`*://${domain}/*`);
             }
           });
         } else {
           // Remove URLs when switched off
-          blocked = blocked.filter((url) => !urlsToToggle.includes(url));
+          const domainsToRemove = urlsToToggle.map(normalizePattern);
+
+          blocked = blocked.filter(
+            (p) => !domainsToRemove.includes(normalizePattern(p)),
+          );
         }
 
         chrome.storage.sync.set({ blocked: blocked }, function () {
@@ -297,9 +344,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
-document.getElementById("reportBtn").addEventListener("click", ()=>{
+document.getElementById("reportBtn").addEventListener("click", () => {
   window.open("https://forms.gle/7YXi5qjtyi4foTNr7");
-})
-document.getElementById("requestBtn").addEventListener("click", ()=>{
+});
+document.getElementById("requestBtn").addEventListener("click", () => {
   window.open("https://forms.gle/gv67rcBSrtHDpn2v6");
-})
+});
