@@ -8,6 +8,7 @@ let blockHits = [];
 let focusSessions = [];
 let assumptions = { ...DEFAULTS };
 let period = "week";
+let members = []; // imported team members: { name, blockHits, focusSessions }
 
 // ---------- Theme ----------
 chrome.storage.sync.get("settings", (data) => {
@@ -70,22 +71,27 @@ function periodRange() {
   return { start: new Date(0), end: new Date(8640000000000000), prevStart: null, prevEnd: null };
 }
 
+// Human-readable label for the selected period (used in print header).
+function periodLabel() {
+  return { today: "Today", week: "This week", month: "This month", all: "All time" }[period] || period;
+}
+
 // ---------- Aggregation ----------
 function inRange(ts, start, end) {
   return ts >= start.getTime() && ts < end.getTime();
 }
 
-function aggregate(start, end) {
-  const focusMin = focusSessions
+function aggregate(start, end, hits = blockHits, sessions = focusSessions) {
+  const focusMin = sessions
     .filter((s) => inRange(s.ts, start, end))
     .reduce((sum, s) => sum + (s.workMin || 0), 0);
-  const attempts = blockHits.filter((h) => inRange(h.ts, start, end)).length;
+  const attempts = hits.filter((h) => inRange(h.ts, start, end)).length;
   return { focusMin, attempts };
 }
 
-function topDomains(start, end, limit = 8) {
+function topDomains(start, end, limit = 8, hits = blockHits) {
   const counts = {};
-  for (const h of blockHits) {
+  for (const h of hits) {
     if (!inRange(h.ts, start, end)) continue;
     counts[h.domain] = (counts[h.domain] || 0) + 1;
   }
@@ -190,6 +196,229 @@ function renderTopDomains() {
     .join("");
 }
 
+// ---------- Productivity change ----------
+// Estimated productivity change = % change in focus minutes vs previous period.
+function renderProdChange(cur, prev) {
+  const el = document.getElementById("prodChange");
+  if (!prev) {
+    // "all time" has no previous period to compare against
+    el.innerHTML = `<span class="text-muted fs-6">no comparison</span>`;
+    return;
+  }
+  if (prev.focusMin === 0) {
+    el.innerHTML =
+      cur.focusMin > 0
+        ? `<span class="delta-up">▲ New focus activity</span>`
+        : `<span class="text-muted fs-6">No focus data yet</span>`;
+    return;
+  }
+  const pct = Math.round(((cur.focusMin - prev.focusMin) / prev.focusMin) * 100);
+  if (pct === 0) {
+    el.innerHTML = `<span class="text-muted">▬ 0%</span>`;
+    return;
+  }
+  const cls = pct > 0 ? "delta-up" : "delta-down";
+  const arrow = pct > 0 ? "▲" : "▼";
+  el.innerHTML = `<span class="${cls}">${arrow} ${Math.abs(pct)}%</span>`;
+}
+
+// ---------- Optimization suggestions ----------
+// Bucket blocked attempts in [start,end) by hour-of-day (0–23).
+function hourBuckets(start, end) {
+  const buckets = new Array(24).fill(0);
+  for (const h of blockHits) {
+    if (!inRange(h.ts, start, end)) continue;
+    buckets[new Date(h.ts).getHours()]++;
+  }
+  return buckets;
+}
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function renderSuggestions() {
+  const { start, end, prevStart, prevEnd } = periodRange();
+  const cur = aggregate(start, end);
+  const prev = prevStart ? aggregate(prevStart, prevEnd) : null;
+  const top = topDomains(start, end, 1);
+  const container = document.getElementById("suggestions");
+  const tips = [];
+
+  // Not enough data to say anything useful.
+  if (cur.attempts === 0 && cur.focusMin === 0) {
+    container.innerHTML = `<p class="text-muted small m-0">Not enough data for this period yet — run a few focus sessions and keep browsing to get tailored suggestions.</p>`;
+    return;
+  }
+
+  // 1. Top distraction + peak hour window → scheduled block.
+  if (top.length && top[0][1] >= 2) {
+    const [domain] = top[0];
+    const buckets = hourBuckets(start, end);
+    let peak = 0;
+    for (let h = 1; h < 24; h++) if (buckets[h] > buckets[peak]) peak = h;
+    const window = `${pad2(peak)}:00–${pad2((peak + 2) % 24)}:00`;
+    tips.push({
+      cls: "danger",
+      text: `Your top distraction is <strong>${domain}</strong>, with most attempts around <strong>${window}</strong> — consider a scheduled block during that window.`,
+    });
+  }
+
+  // 2. Focus minutes dropped vs previous period → nudge more sessions.
+  if (prev && prev.focusMin > 0 && cur.focusMin < prev.focusMin) {
+    const drop = Math.round(((prev.focusMin - cur.focusMin) / prev.focusMin) * 100);
+    tips.push({
+      cls: "warning",
+      text: `Your focus time is down <strong>${drop}%</strong> vs the previous period. Try scheduling a couple of extra focus sessions to get back on track.`,
+    });
+  }
+
+  // 3. Many attempts relative to focus time → enable focus mode.
+  const focusHrs = cur.focusMin / 60;
+  if (cur.attempts >= 5 && (focusHrs === 0 || cur.attempts / Math.max(focusHrs, 0.25) >= 6)) {
+    tips.push({
+      cls: "info",
+      text: `You had <strong>${cur.attempts}</strong> distraction attempts relative to your focus time. Enabling focus mode during work blocks would cut the interruptions.`,
+    });
+  }
+
+  // 4. Positive reinforcement when things look good.
+  if (prev && prev.focusMin > 0 && cur.focusMin > prev.focusMin) {
+    const up = Math.round(((cur.focusMin - prev.focusMin) / prev.focusMin) * 100);
+    tips.push({
+      cls: "success",
+      text: `Nice — focus time is up <strong>${up}%</strong> vs the previous period. Keep the current routine going.`,
+    });
+  }
+
+  if (!tips.length) {
+    container.innerHTML = `<p class="text-muted small m-0">No standout patterns this period — keep it up!</p>`;
+    return;
+  }
+
+  container.innerHTML = tips
+    .slice(0, 4)
+    .map((t) => `<div class="alert alert-${t.cls} py-2 mb-2 small">${t.text}</div>`)
+    .join("");
+}
+
+// ---------- Team / multi-member view ----------
+// Build a row of aggregated stats for one dataset over the current period.
+function memberStats(name, hits, sessions) {
+  const { start, end } = periodRange();
+  const { focusMin, attempts } = aggregate(start, end, hits, sessions);
+  const savedMin = attempts * (assumptions.minutesPerAttempt || 0);
+  return { name, focusMin, attempts, value: moneyValue(focusMin, savedMin) };
+}
+
+function renderTeam() {
+  const container = document.getElementById("teamTable");
+  const nameInput = document.getElementById("memberName");
+  const myName = (nameInput && nameInput.value.trim()) || "Me";
+
+  const rows = [memberStats(myName, blockHits, focusSessions)];
+  members.forEach((m, i) =>
+    rows.push({ ...memberStats(m.name, m.blockHits, m.focusSessions), idx: i }),
+  );
+
+  const total = rows.reduce(
+    (t, r) => ({
+      focusMin: t.focusMin + r.focusMin,
+      attempts: t.attempts + r.attempts,
+      value: t.value + r.value,
+    }),
+    { focusMin: 0, attempts: 0, value: 0 },
+  );
+
+  const body = rows
+    .map((r) => {
+      const remove =
+        r.idx != null
+          ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 team-remove no-print" data-idx="${r.idx}" title="Remove">✕</button>`
+          : "";
+      return `<tr>
+        <td>${r.name} ${r.idx == null ? '<span class="badge bg-secondary">you</span>' : ""}</td>
+        <td>${fmtDuration(r.focusMin)}</td>
+        <td>${r.attempts}</td>
+        <td>${fmtMoney(r.value)}</td>
+        <td class="text-end">${remove}</td>
+      </tr>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr>
+          <th>Member</th><th>Focus time</th><th>Attempts</th><th>Est. value</th><th></th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr class="fw-semibold border-top">
+          <td>Total (${rows.length})</td>
+          <td>${fmtDuration(total.focusMin)}</td>
+          <td>${total.attempts}</td>
+          <td>${fmtMoney(total.value)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+
+  container.querySelectorAll(".team-remove").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      members.splice(Number(btn.dataset.idx), 1);
+      renderTeam();
+    });
+  });
+}
+
+// Export the current user's raw stats as a shareable JSON file.
+function exportMine() {
+  const name =
+    (document.getElementById("memberName").value.trim()) || "Me";
+  const payload = {
+    version: 1,
+    member: name,
+    exportedAt: new Date().toISOString(),
+    blockHits,
+    focusSessions,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `rekblock-stats-${name.replace(/\s+/g, "_")}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Read one or more exported JSON files into the in-memory members array.
+function importMembers(fileList) {
+  const files = Array.from(fileList || []);
+  let pending = files.length;
+  if (!pending) return;
+  files.forEach((file) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        members.push({
+          name: data.member || file.name.replace(/\.json$/i, ""),
+          blockHits: Array.isArray(data.blockHits) ? data.blockHits : [],
+          focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [],
+        });
+      } catch (e) {
+        alert(`Could not read ${file.name}: not a valid stats export.`);
+      }
+      if (--pending === 0) renderTeam();
+    };
+    reader.onerror = () => {
+      if (--pending === 0) renderTeam();
+    };
+    reader.readAsText(file);
+  });
+}
+
 // ---------- Main render ----------
 function render() {
   const { start, end, prevStart, prevEnd } = periodRange();
@@ -213,8 +442,15 @@ function render() {
     prev ? prev.attempts : null,
   );
 
+  renderProdChange(cur, prev);
   renderDailyChart();
   renderTopDomains();
+  renderSuggestions();
+  renderTeam();
+
+  // Print header meta (period + generated date)
+  document.getElementById("printMeta").textContent =
+    `Period: ${periodLabel()} · Generated ${new Date().toLocaleString()}`;
 }
 
 // ---------- CSV export ----------
@@ -293,6 +529,18 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("saveAssumptions")
     .addEventListener("click", saveAssumptions);
   document.getElementById("exportCsv").addEventListener("click", exportCsv);
+  document
+    .getElementById("printPdf")
+    .addEventListener("click", () => window.print());
+
+  // Team view
+  document.getElementById("exportMine").addEventListener("click", exportMine);
+  document
+    .getElementById("importMembers")
+    .addEventListener("change", (e) => importMembers(e.target.files));
+  document
+    .getElementById("memberName")
+    .addEventListener("input", renderTeam);
 
   chrome.storage.onChanged.addListener((changes, ns) => {
     if (ns !== "local") return;

@@ -536,6 +536,9 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("statsBtn")
     .addEventListener("click", () => openPage("pages/stats.html"));
+  document
+    .getElementById("optionsBtn")
+    .addEventListener("click", () => openPage("pages/options.html"));
 
   document.getElementById("searchInput").addEventListener("input", (e) => {
     blockFilter = e.target.value.trim().toLowerCase();
