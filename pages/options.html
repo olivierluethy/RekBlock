@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RekBlock — Options</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="options.js" defer></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Custom tab buttons */
+      .tab-btn.active {
+        background-color: var(--bs-primary);
+        color: #fff;
+      }
+      /* Custom modal (no Bootstrap JS) */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        padding: 1rem;
+      }
+      #statusToast {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        z-index: 2000;
+      }
+      pre.preview {
+        max-height: 320px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body class="container py-4" style="max-width: 60rem">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h2 class="m-0">⚙️ RekBlock Settings</h2>
+      <input
+        id="searchInput"
+        type="search"
+        class="form-control"
+        style="max-width: 20rem"
+        placeholder="🔍 Search categories, domains, exceptions…"
+      />
+    </div>
+
+    <!-- Tab nav -->
+    <div class="btn-group flex-wrap mb-4" role="group">
+      <button class="btn btn-outline-primary tab-btn active" data-tab="categories">📁 Categories</button>
+      <button class="btn btn-outline-primary tab-btn" data-tab="predefined">🌐 Website DB</button>
+      <button class="btn btn-outline-primary tab-btn" data-tab="modes">🎛️ Modes</button>
+      <button class="btn btn-outline-primary tab-btn" data-tab="exceptions">⚖️ Exceptions</button>
+      <button class="btn btn-outline-primary tab-btn" data-tab="io">🔄 Import / Export</button>
+    </div>
+
+    <!-- ============ CATEGORIES ============ -->
+    <section id="tab-categories" class="tab-panel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0">Custom categories</h4>
+        <button id="newCategoryBtn" class="btn btn-primary btn-sm">＋ New category</button>
+      </div>
+      <p class="text-muted small">
+        Group domains into categories. A <strong>block</strong> category blocks its
+        domains when an active mode includes it. An <strong>allow</strong> category is
+        an allowlist — when active, the whole web is blocked except its domains. A
+        domain may appear in multiple categories.
+      </p>
+      <div id="categoryList" class="row g-3"></div>
+    </section>
+
+    <!-- ============ PREDEFINED DB ============ -->
+    <section id="tab-predefined" class="tab-panel d-none">
+      <h4>Predefined website database</h4>
+      <p class="text-muted small">
+        Browse built-in categories, untick any domains you don't want, then import.
+        Ticking a category's box selects it. <strong>Import selected</strong> merges
+        the selected categories; <strong>Add only missing</strong> adds just the
+        domains you don't already have (never duplicates).
+      </p>
+      <div class="d-flex gap-2 mb-3">
+        <button id="pdImportSelected" class="btn btn-primary btn-sm">Import selected</button>
+        <button id="pdAddMissing" class="btn btn-outline-primary btn-sm">Add only missing</button>
+      </div>
+      <div id="predefinedList" class="row g-3"></div>
+    </section>
+
+    <!-- ============ MODES ============ -->
+    <section id="tab-modes" class="tab-panel d-none">
+      <h4>Browsing modes</h4>
+      <p class="text-muted small">
+        A mode is a one-click browsing context — pick which categories are active in
+        it. Only one mode can be active at a time.
+      </p>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold">Create a mode</h6>
+          <div class="mb-2">
+            <input id="modeNameInput" class="form-control form-control-sm" placeholder="Mode name (e.g. Deep Work)" />
+          </div>
+          <div id="modeCatChecks" class="mb-2"></div>
+          <div id="modeAllowWarning" class="alert alert-warning py-2 small d-none">
+            ⚠️ This mode includes an <strong>allowlist</strong> category — activating it
+            will block the entire web except the allowed domains (allowlist lockdown).
+          </div>
+          <button id="modeCreateBtn" class="btn btn-primary btn-sm">Create mode</button>
+        </div>
+      </div>
+
+      <h6 class="fw-semibold">Your modes</h6>
+      <div id="modeList"></div>
+    </section>
+
+    <!-- ============ EXCEPTIONS ============ -->
+    <section id="tab-exceptions" class="tab-panel d-none">
+      <h4>Exceptions</h4>
+      <p class="text-muted small">
+        Per-domain overrides that beat every category and mode rule. Force-allow a site
+        during a lockdown, or force-block a site regardless of mode.
+      </p>
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">Domain</label>
+              <input id="excDomainInput" class="form-control form-control-sm" placeholder="example.com" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Rule</label>
+              <select id="excTypeSelect" class="form-select form-select-sm">
+                <option value="allow">Always allow</option>
+                <option value="block">Always block</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <button id="excAddBtn" class="btn btn-primary btn-sm w-100">Add exception</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ul id="excList" class="list-group"></ul>
+    </section>
+
+    <!-- ============ IMPORT / EXPORT ============ -->
+    <section id="tab-io" class="tab-panel d-none">
+      <h4>Import / Export</h4>
+
+      <!-- Export -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold">Export</h6>
+          <p class="text-muted small mb-2">Select what to include, preview, then download.</p>
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <div class="fw-semibold small mb-1">Categories</div>
+              <div id="exportCatList"></div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="fw-semibold small mb-1">Modes</div>
+              <div id="exportModeList"></div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="fw-semibold small mb-1">Other</div>
+              <label class="d-block small">
+                <input type="checkbox" id="exportExceptions" class="form-check-input me-1" checked />
+                Exceptions
+              </label>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="fw-semibold small mb-1">Preview</div>
+            <pre id="exportPreview" class="preview bg-body-tertiary border rounded p-2 small"></pre>
+          </div>
+          <button id="exportDownloadBtn" class="btn btn-primary btn-sm mt-2">⬇️ Download .json</button>
+        </div>
+      </div>
+
+      <!-- Import config -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold">Import config (merge)</h6>
+          <p class="text-muted small mb-2">
+            Load a RekBlock config file, choose which items to keep, then merge them into
+            your current settings (unrelated data is preserved).
+          </p>
+          <input id="importConfigFile" type="file" accept="application/json,.json" class="form-control form-control-sm mb-3" />
+          <div id="importPreview" class="border rounded p-2 mb-2"></div>
+          <button id="importApplyBtn" class="btn btn-primary btn-sm" disabled>Apply selected</button>
+        </div>
+      </div>
+
+      <!-- Import from other blockers -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold">Import from other blockers</h6>
+          <p class="text-muted small mb-2">
+            Paste a newline/comma-separated list of domains/URLs, or a JSON array of
+            strings (BlockSite / StayFocusd style) — or load a file. Each entry is
+            normalized to a base domain. Then pick which to keep and create a category.
+          </p>
+          <textarea id="blkPasteInput" class="form-control form-control-sm mb-2" rows="5" placeholder="facebook.com&#10;https://www.youtube.com/watch?v=x&#10;[&quot;reddit.com&quot;, &quot;x.com&quot;]"></textarea>
+          <div class="row g-2 align-items-center mb-2">
+            <div class="col-auto">
+              <input id="blkFile" type="file" accept=".txt,.json,text/plain,application/json" class="form-control form-control-sm" />
+            </div>
+            <div class="col-auto">
+              <button id="blkParseBtn" class="btn btn-outline-primary btn-sm">Parse</button>
+            </div>
+          </div>
+          <div id="blkPreview" class="border rounded p-2 mb-2"></div>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">New category name</label>
+              <input id="blkCatName" class="form-control form-control-sm" placeholder="Imported" />
+            </div>
+            <div class="col-12 col-md-3">
+              <button id="blkCreateBtn" class="btn btn-primary btn-sm w-100" disabled>Create category</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CATEGORY MODAL (custom) ============ -->
+    <div id="catModal" class="modal-overlay d-none">
+      <div class="card shadow" style="width: 100%; max-width: 32rem">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 id="catModalTitle" class="m-0">New category</h5>
+            <button id="catModalClose" class="btn-close" aria-label="Close"></button>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-8">
+              <label class="form-label small mb-1">Name</label>
+              <input id="catNameInput" class="form-control form-control-sm" placeholder="e.g. Social Media" />
+            </div>
+            <div class="col-4">
+              <label class="form-label small mb-1">Emoji</label>
+              <input id="catEmojiInput" class="form-control form-control-sm" value="📁" maxlength="4" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small mb-1">Mode</label>
+            <select id="catModeSelect" class="form-select form-select-sm">
+              <option value="block">Block — block these domains</option>
+              <option value="allow">Allow — allowlist (block everything else)</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Domains</label>
+            <div class="input-group input-group-sm mb-2">
+              <input id="catDomainInput" class="form-control" placeholder="example.com" />
+              <button id="catDomainAddBtn" class="btn btn-outline-primary">Add</button>
+            </div>
+            <ul id="catDomainList" class="list-group" style="max-height: 220px; overflow-y: auto"></ul>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button id="catCancelBtn" class="btn btn-outline-secondary btn-sm">Cancel</button>
+            <button id="catSaveBtn" class="btn btn-primary btn-sm">Save category</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status toast -->
+    <div id="statusToast" class="alert alert-dark shadow d-none py-2 px-3 mb-0"></div>
+  </body>
+</html>

@@ -30,25 +30,60 @@
       .delta-down {
         color: #dc2626;
       }
+      /* Big productivity-change banner */
+      .prod-change {
+        font-size: 2.4rem;
+        font-weight: 700;
+      }
+      /* Print header only shows on paper */
+      #printHeader {
+        display: none;
+      }
+      @media print {
+        /* Hide interactive chrome */
+        .no-print {
+          display: none !important;
+        }
+        #printHeader {
+          display: block !important;
+        }
+        body {
+          max-width: none !important;
+        }
+        .card {
+          break-inside: avoid;
+          border: 1px solid #ccc !important;
+        }
+        a[href]::after {
+          content: "";
+        }
+      }
     </style>
   </head>
   <body class="container py-4" style="max-width: 56rem">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Print-only header (browser Save-as-PDF) -->
+    <div id="printHeader" class="mb-4">
+      <h1 class="m-0">RekBlock — Productivity Report</h1>
+      <p class="text-muted m-0" id="printMeta"></p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
       <h2 class="m-0">📊 Productivity Dashboard</h2>
       <div class="d-flex gap-2">
         <a href="focus.html" class="btn btn-outline-secondary btn-sm">🍅 Focus</a>
         <button id="exportCsv" class="btn btn-outline-secondary btn-sm">⬇️ CSV</button>
+        <button id="printPdf" class="btn btn-outline-secondary btn-sm">🖨️ Print / PDF</button>
       </div>
     </div>
 
-    <p class="text-muted small">
+    <p class="text-muted small no-print">
       Estimates based on your own activity. Focus time is measured from completed
       focus sessions; "distraction attempts" counts how often you tried to open a
       blocked site. Money figures are estimates from the settings below.
     </p>
 
     <!-- Assumptions -->
-    <div class="card mb-3">
+    <div class="card mb-3 no-print">
       <div class="card-body">
         <div class="row g-2 align-items-end">
           <div class="col-6 col-md-3">
@@ -71,11 +106,22 @@
     </div>
 
     <!-- Period selector -->
-    <div class="btn-group mb-3" role="group" id="periodGroup">
+    <div class="btn-group mb-3 no-print" role="group" id="periodGroup">
       <button class="btn btn-outline-primary period-btn" data-period="today">Today</button>
       <button class="btn btn-outline-primary period-btn active" data-period="week">This week</button>
       <button class="btn btn-outline-primary period-btn" data-period="month">This month</button>
       <button class="btn btn-outline-primary period-btn" data-period="all">All time</button>
+    </div>
+
+    <!-- Productivity change banner -->
+    <div class="card mb-3 border-0" id="prodChangeCard" style="background:var(--bs-tertiary-bg)">
+      <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">Productivity change</div>
+          <div class="text-muted small">Focus minutes this period vs the previous one</div>
+        </div>
+        <div class="prod-change" id="prodChange">–</div>
+      </div>
     </div>
 
     <!-- KPIs -->
@@ -124,6 +170,41 @@
       <div class="card-body">
         <h6 class="fw-semibold">Top blocked sites</h6>
         <div id="topDomains"></div>
+      </div>
+    </div>
+
+    <!-- Optimization suggestions -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold">💡 Optimization suggestions</h6>
+        <div id="suggestions"></div>
+      </div>
+    </div>
+
+    <!-- Team / multi-member view -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold">👥 Team view</h6>
+        <p class="text-muted small">
+          Aggregate stats across people or devices. Export your stats and share the
+          file, or import others' exports to build a combined team view. Imported
+          data stays in this page only (nothing is uploaded). Totals respect the
+          selected period.
+        </p>
+        <div class="row g-2 align-items-end mb-3 no-print">
+          <div class="col-12 col-md-4">
+            <label class="form-label small mb-1">Your name (for export)</label>
+            <input type="text" id="memberName" class="form-control form-control-sm" placeholder="Me" />
+          </div>
+          <div class="col-6 col-md-3">
+            <button id="exportMine" class="btn btn-outline-primary btn-sm w-100">⬆️ Export my stats</button>
+          </div>
+          <div class="col-6 col-md-5">
+            <label class="form-label small mb-1">Import member stats (JSON)</label>
+            <input type="file" id="importMembers" class="form-control form-control-sm" accept="application/json,.json" multiple />
+          </div>
+        </div>
+        <div id="teamTable"></div>
       </div>
     </div>
   </body>
