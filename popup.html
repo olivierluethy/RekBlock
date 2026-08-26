@@ -42,6 +42,13 @@
             <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13h-5a.5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6m6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1"/>
           </svg>
         </button>
+        <button id="themeBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Toggle dark mode">🌙</button>
+        <button id="exportBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Export configuration">⬇️</button>
+        <button id="importBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Import configuration">⬆️</button>
+        <button id="lockBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Password protection">🔓</button>
+        <button id="focusBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Focus timer">🍅</button>
+        <button id="statsBtn" type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale" title="Productivity dashboard">📊</button>
+        <input type="file" id="importFile" accept="application/json,.json" class="d-none" />
       </div>
       <button id="fullScreen" type="button" class="btn btn-primary btn-sm d-flex align-items-center shadow-sm transition-transform hover-scale animate__animated animate__pulse animate__infinite animate__slow">
         Full Screen
@@ -51,10 +58,15 @@
     <h1 class="text-center fw-bold mb-4 text-primary animate__animated animate__slideInDown">URL Blocker</h1>
 
     <!-- Custom URL Input -->
-    <div class="input-group mb-3 animate__animated animate__fadeInUp">
+    <div class="input-group mb-2 animate__animated animate__fadeInUp">
       <input type="text" id="urlInput" class="form-control rounded-start-3 shadow-sm" placeholder="Enter domain (e.g., example.com)" />
       <button id="addButton" type="button" class="btn btn-primary rounded-end-3 shadow-sm">Add</button>
     </div>
+
+    <!-- Block current tab -->
+    <button id="blockCurrentBtn" type="button" class="btn btn-outline-danger btn-sm w-100 mb-3 shadow-sm">
+      🚫 Block the current tab
+    </button>
 
     <!-- QUICK BLOCK CATEGORIES (New Section) -->
         <!-- QUICK BLOCK CATEGORIES -->
@@ -126,6 +138,7 @@
 
     <!-- Blocked List Section -->
     <h6 class="fw-bold text-secondary mb-2">Blocked Domains</h6>
+    <input type="text" id="searchInput" class="form-control form-control-sm mb-2 shadow-sm" placeholder="🔍 Search blocked domains…" />
     <ul id="blockedList" class="list-group overflow-auto flex-grow-1" style="max-height: 200px">
       <!-- Dynamically added <li> items here -->
     </ul>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Productivity Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="stats.js" defer></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .kpi {
+        font-size: 1.9rem;
+        font-weight: 700;
+      }
+      .bar {
+        transition: width 0.4s ease;
+      }
+      .delta-up {
+        color: #16a34a;
+      }
+      .delta-down {
+        color: #dc2626;
+      }
+    </style>
+  </head>
+  <body class="container py-4" style="max-width: 56rem">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="m-0">📊 Productivity Dashboard</h2>
+      <div class="d-flex gap-2">
+        <a href="focus.html" class="btn btn-outline-secondary btn-sm">🍅 Focus</a>
+        <button id="exportCsv" class="btn btn-outline-secondary btn-sm">⬇️ CSV</button>
+      </div>
+    </div>
+
+    <p class="text-muted small">
+      Estimates based on your own activity. Focus time is measured from completed
+      focus sessions; "distraction attempts" counts how often you tried to open a
+      blocked site. Money figures are estimates from the settings below.
+    </p>
+
+    <!-- Assumptions -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Hourly rate</label>
+            <input type="number" id="wage" class="form-control form-control-sm" min="0" step="1" />
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Currency</label>
+            <input type="text" id="currency" class="form-control form-control-sm" maxlength="3" />
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Min. saved / attempt</label>
+            <input type="number" id="minutesPerAttempt" class="form-control form-control-sm" min="0" step="1" />
+          </div>
+          <div class="col-6 col-md-3">
+            <button id="saveAssumptions" class="btn btn-primary btn-sm w-100">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Period selector -->
+    <div class="btn-group mb-3" role="group" id="periodGroup">
+      <button class="btn btn-outline-primary period-btn" data-period="today">Today</button>
+      <button class="btn btn-outline-primary period-btn active" data-period="week">This week</button>
+      <button class="btn btn-outline-primary period-btn" data-period="month">This month</button>
+      <button class="btn btn-outline-primary period-btn" data-period="all">All time</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-2">
+      <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+          <div class="kpi text-primary" id="kpiFocus">–</div>
+          <div class="text-muted small">Focus time</div>
+          <div class="small" id="deltaFocus"></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+          <div class="kpi text-danger" id="kpiAttempts">–</div>
+          <div class="text-muted small">Distraction attempts blocked</div>
+          <div class="small" id="deltaAttempts"></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+          <div class="kpi text-success" id="kpiSaved">–</div>
+          <div class="text-muted small">Est. time saved</div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+          <div class="kpi text-success" id="kpiValue">–</div>
+          <div class="text-muted small">Est. value (ROI)</div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold">Activity — last 14 days</h6>
+        <div class="d-flex gap-3 small mb-2">
+          <span><span class="badge" style="background:#3b82f6">&nbsp;</span> Focus min</span>
+          <span><span class="badge" style="background:#dc2626">&nbsp;</span> Attempts</span>
+        </div>
+        <div id="dailyChart" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold">Top blocked sites</h6>
+        <div id="topDomains"></div>
+      </div>
+    </div>
+  </body>
+</html>
