@@ -9,7 +9,8 @@
     "declarativeNetRequestWithHostAccess",
     "tabs",
     "contextMenus",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -194,6 +194,13 @@ function handleSubmit() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  chrome.storage.sync.get("settings", function (data) {
+    document.documentElement.setAttribute(
+      "data-bs-theme",
+      data.settings?.theme || "light",
+    );
+  });
+
   chrome.storage.sync.get("blocked", function (data) {
     renderBlockedList(data.blocked || []);
   });
